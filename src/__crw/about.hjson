@@ -1,0 +1,12 @@
+{
+    "Description": '''
+Crown node - master or system based on configuration.
+The Crown master- and systemnodes are incentivized full nodes on the Crown blockchain with governance, block-production (MNPoS), and staking capabilities. 
+'''
+    Links: [
+        { 
+            website: "https://crownplatform.com",
+            explorer: "https://chainz.cryptoid.info/crw/"
+        }
+    ]
+}

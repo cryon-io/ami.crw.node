@@ -1,0 +1,8 @@
+{
+    "id": "crw.node" ,
+    "version" : "0.0.2",
+    "dependencies": [
+        { "id":"btc.base" },
+        { "id": "crw.binaries"}
+    ]
+}
