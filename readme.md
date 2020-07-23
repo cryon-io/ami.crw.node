@@ -18,10 +18,14 @@ Crown Masternode AMI app - runs system, master or gateway node.
     },
     "configuration": {
         "NODE_PRIVKEY" : "xxxxxxxxxxxxxxxxxxxxxxxxx",
-        "NODE_TYPE": "masternode",
-        "USER": "crw",
-        "IP" : "127.0.0.1"
-    }
+        "RPC_USER": "yyyyy",
+        "RPC_PASS": "xxxxxyyyyy",
+        "RPC_PORT": 5520,
+        "DAEMON_CONFIGURATION": {
+            "externalip" : "127.0.0.1"
+        }
+    },
+    "USER": "crw",
 }
 ```
 *Node types are: `masternode`, `systemnode`.*
