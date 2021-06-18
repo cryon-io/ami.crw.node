@@ -55,10 +55,6 @@ return {
             description = "ami 'validate' sub command",
             summary = "Validates app configuration and platform support",
             action = function(_options, command, args, cli)
-                if _options.help then
-                    show_cli_help(cli)
-                    return
-                end
                 -- //TODO: Validate platform
                 -- //TODO: add switches
                 ami_assert(proc.EPROC, "CRW node AMI requires extra api - eli.proc.extra", EXIT_MISSING_API)
