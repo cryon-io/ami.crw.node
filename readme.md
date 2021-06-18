@@ -1,6 +1,6 @@
 ### crw.node
 
-Crown Masternode AMI app - runs system, master or gateway node.
+CRW node AMI app - runs system, master or gateway node.
 
 **All commands should be executed as root or with `sudo`.**
 
@@ -18,9 +18,7 @@ Crown Masternode AMI app - runs system, master or gateway node.
     },
     "configuration": {
         "NODE_PRIVKEY" : "xxxxxxxxxxxxxxxxxxxxxxxxx",
-        "RPC_USER": "yyyyy",
-        "RPC_PASS": "xxxxxyyyyy",
-        "RPC_PORT": 5520,
+        "NOTE_TYPE": "systemnode", // or masternode
         "DAEMON_CONFIGURATION": {
             "externalip" : "127.0.0.1"
         }

@@ -1,40 +1,43 @@
-local _json = ...
-local _hjson = require"hjson"
+local _json = am.options.OUTPUT_FORMAT == "json"
 
-local _ok, _systemctl = safe_load_plugin("systemctl")
+local _ok, _systemctl = am.plugin.safe_get("systemctl")
 ami_assert(_ok, "Failed to load systemctl plugin", EXIT_APP_START_ERROR)
 
-local _info = {}
-local _ok, _status = _systemctl.safe_get_service_status(APP.id .. "-" .. APP.model.SERVICE_NAME)
-ami_assert(_ok, "Failed to start " .. APP.id .. "-" .. APP.model.SERVICE_NAME .. ".service " .. (_status or ""), EXIT_APP_START_ERROR)
-_info.crownd = _status
+local _appId = am.app.get("id", "unknown")
+local _serviceName = am.app.get_model("SERVICE_NAME", "unknown")
+local _ok, _status, _started = _systemctl.safe_get_service_status(_appId .. "-" .. _serviceName)
+ami_assert(_ok, "Failed to start " .. _appId .. "-" .. _serviceName .. ".service " .. (_status or ""), EXIT_PLUGIN_EXEC_ERROR)
 
-_info.level = "ok"
+local _info = {
+    crownd = _status,
+    started = _started,
+    level = "ok",
+    synced = false,
+    status = "CRW node down",
+    version = am.app.get_version(),
+    type = am.app.get_type(),
+    currentBlock = "unknown",
+    currentBlockHash = "unknown",
+}
 
 local function _exec_crown_cli(...)
-    local _cmd = exString.join_strings(" ", ...)
-    local _rd, _proc_wr = eliFs.pipe()
-    local _rderr, _proc_werr = eliFs.pipe()
-    local _proc, _err = eliProc.spawn {"bin/bin/crown-cli", args = { ... }, stdout = _proc_wr, stderr = _proc_werr}
-    _proc_wr:close()
-    _proc_werr:close()
-
-    if not _proc then
-        _rd:close()
-        _rderr:close()
-        ami_error("Failed to execute crown-cli command: " .. _cmd, EXIT_APP_INTERNAL_ERROR)
+    local _arg = {"-datadir=data", ...}
+    local _rpcBind = am.app.get_config({"DAEMON_CONFIGURATION", "rpcbind"})
+    if type(_rpcBind) == "string" then
+        table.insert(_arg, 1, "-rpcconnect=" .. _rpcBind)
     end
-    local _exitcode = _proc:wait() 
-    local _stdout = _rd:read("a")
-    local _stderr = _rderr:read("a")
-    --ami_assert(_exitcode == 0, "Failed to execute crown-cli command: " .. _cmd, EXIT_APP_INTERNAL_ERROR)
+    local _proc = proc.spawn("bin/bin/crown-cli", _arg, { stdio = { stdout = "pipe", stderr = "pipe" }, wait = true})
+    
+    local _exitcode = _proc.exitcode
+    local _stdout = _proc.stdoutStream:read("a") or ""
+    local _stderr = _proc.stderrStream:read("a") or ""
     return _exitcode, _stdout, _stderr
 end
 
 local function _get_crown_cli_result(exitcode, stdout, stderr)
     if exitcode ~= 0 then 
         local _errorInfo = stderr:match("error: (.*)")
-        local _ok, _output = pcall(_hjson.parse, _errorInfo)
+        local _ok, _output = hjson.safe_parse(_errorInfo)
         if _ok then 
             return false, _output
         else 
@@ -42,7 +45,7 @@ local function _get_crown_cli_result(exitcode, stdout, stderr)
         end
     end
     
-    local _ok, _output = pcall(_hjson.parse, stdout)
+    local _ok, _output = hjson.safe_parse(stdout)
     if _ok then 
         return true, _output
     else 
@@ -50,27 +53,25 @@ local function _get_crown_cli_result(exitcode, stdout, stderr)
     end
 end
 
-if _info.crownd == "running" then 
-    
-    local _exitcode, _stdout, _stderr = _exec_crown_cli("-datadir=data", APP.configuration.NODE_TYPE, "status")
-    local _success, _output = _get_crown_cli_result(_exitcode, _stdout, _stderr)
+if _info.crownd == "running" then
+    local _nodeType =  am.app.get_configuration("NODE_TYPE")
 
-    _info.status = _output.message
-    if _success and (_info.status == 'Systemnode successfully started' or _info.status == 'Masternode successfully started') then 
-        _info.level = "ok"
-    else
-        _info.level = "error"
+    if _nodeType then
+        local _exitcode, _stdout, _stderr = _exec_crown_cli("-datadir=data", am.app.get_configuration("NODE_TYPE"), "status")
+        local _success, _output = _get_crown_cli_result(_exitcode, _stdout, _stderr)
+
+        _info.status = _output.message
+        if not _success or (_info.status ~= 'Systemnode successfully started' and _info.status ~= 'Masternode successfully started') then
+            _info.level = "error"
+        end
     end
 
     local _exitcode, _stdout, _stderr = _exec_crown_cli("-datadir=data", "getblockchaininfo")
     local _success, _output = _get_crown_cli_result(_exitcode, _stdout, _stderr)
 
-    if _success then 
+    if _success then
         _info.currentBlock = _output.blocks
         _info.currentBlockHash = _output.bestblockhash
-    else 
-        _info.currentBlock = "unknown"
-        _info.currentBlockHash = "unknown"
     end
 
     local _exitcode, _stdout, _stderr = _exec_crown_cli("-datadir=data", "mnsync", "status")
@@ -78,22 +79,17 @@ if _info.crownd == "running" then
 
     if _success then 
         _info.synced = _output.IsBlockchainSynced
-    else 
-        _info.synced = false
     end
-else 
+else
     _info.level = "error"
 end
 
-if not _info.synced and _info.level == 'ok' then 
+if not _info.synced and _info.level == 'ok' then
     _info.level = 'warn'
 end
 
-_info.version = get_app_version()
-_info.type = APP.type.id .. "-" .. (APP.model.NODE_TYPE or "unknown")
-
 if _json then
-   print(_hjson.stringify_to_json(_info, { indent = false }))
+   print(hjson.stringify_to_json(_info, { indent = false }))
 else
-   print(_hjson.stringify(_info))
+   print(hjson.stringify(_info))
 end
