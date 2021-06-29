@@ -62,7 +62,7 @@ return {
 
                 ami_assert(type(am.app.get("id")) == "string", "id not specified!", EXIT_INVALID_CONFIGURATION)
                 ami_assert(
-                    type(am.app.get_config()) == "table",
+                    type(am.app.get_configuration()) == "table",
                     "configuration not found in app.h/json!",
                     EXIT_INVALID_CONFIGURATION
                 )

@@ -22,7 +22,7 @@ local _info = {
 
 local function _exec_crown_cli(...)
     local _arg = {"-datadir=data", ...}
-    local _rpcBind = am.app.get_config({"DAEMON_CONFIGURATION", "rpcbind"})
+    local _rpcBind = am.app.get_configuration({"DAEMON_CONFIGURATION", "rpcbind"})
     if type(_rpcBind) == "string" then
         table.insert(_arg, 1, "-rpcconnect=" .. _rpcBind)
     end
@@ -77,9 +77,17 @@ if _info.crownd == "running" then
     local _exitcode, _stdout, _stderr = _exec_crown_cli("-datadir=data", "mnsync", "status")
     local _success, _output = _get_crown_cli_result(_exitcode, _stdout, _stderr)
 
-    if _success then 
+    if _success then
         _info.synced = _output.IsBlockchainSynced
     end
+
+	if not _nodeType then 
+		if not _success then 
+			_info.status = "Unknown sync status!"
+		else
+			_info.status = _info.synced and "Synced." or "Syncing"
+		end
+	end
 else
     _info.level = "error"
 end
