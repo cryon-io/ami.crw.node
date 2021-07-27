@@ -17,7 +17,6 @@ am.app.set_model(
         CONF_NAME = "crown.conf",
         CONF_SOURCE = "__btc/assets/daemon.conf",
         SERVICE_NAME = "crownd",
-        DATA_DIR = "data",
         IS_SYSTEMNODE = _nodeType == "systemnode"
     },
     { merge = true, overwrite = true }
