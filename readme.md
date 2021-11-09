@@ -1,6 +1,6 @@
 ### crw.node
 
-CRW node AMI app - runs system, master or gateway node.
+CRW node AMI app.
 
 **All commands should be executed as root or with `sudo`.**
 
